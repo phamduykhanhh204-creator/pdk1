@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>IoT Vehicle Tracking</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet Map -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+    }
+
+    header {
+      background: #1e88e5;
+      color: white;
+      padding: 12px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    #map {
+      height: 65vh;
+      width: 100%;
+    }
+
+    .info {
+      padding: 12px;
+      background: white;
+    }
+
+    .row {
+      margin-bottom: 8px;
+    }
+
+    .status {
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      display: inline-block;
+    }
+
+    .normal { background: #c8e6c9; color: #256029; }
+    .theft { background: #ffcdd2; color: #b71c1c; }
+    .accident { background: #fff9c4; color: #f57f17; }
+  </style>
+</head>
+
+<body>
+
+<header>
+  🚗 GIÁM SÁT XE IOT – FIREBASE
+</header>
+
+<div id="map"></div>
+
+<div class="info">
+  <div class="row">📍 Vĩ độ: <span id="lat">--</span></div>
+  <div class="row">📍 Kinh độ: <span id="lng">--</span></div>
+  <div class="row">🚀 Tốc độ: <span id="speed">--</span> km/h</div>
+  <div class="row">
+    ⚠️ Trạng thái:
+    <span id="status" class="status normal">Bình thường</span>
+  </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+  // 🔥 CẤU HÌNH FIREBASE (THAY BẰNG CỦA BẠN)
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+    projectId: "YOUR_PROJECT",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "XXXX",
+    appId: "XXXX"
+  };
+
+  // Init Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // Init Map
+  const map = L.map("map").setView([10.8231, 106.6297], 15);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19
+  }).addTo(map);
+
+  const marker = L.marker([10.8231, 106.6297]).addTo(map);
+
+  // Firebase path
+  const vehicleRef = ref(db, "vehicle01");
+
+  onValue(vehicleRef, (snapshot) => {
+    const data = snapshot.val();
+    if (!data) return;
+
+    document.getElementById("lat").innerText = data.lat;
+    document.getElementById("lng").innerText = data.lng;
+    document.getElementById("speed").innerText = data.speed;
+
+    // Update map
+    marker.setLatLng([data.lat, data.lng]);
+    map.setView([data.lat, data.lng]);
+
+    // Status
+    const statusEl = document.getElementById("status");
+    statusEl.className = "status";
+
+    if (data.status === "theft") {
+      statusEl.innerText = "🚨 Trộm xe";
+      statusEl.classList.add("theft");
+    } else if (data.status === "accident") {
+      statusEl.innerText = "💥 Tai nạn";
+      statusEl.classList.add("accident");
+    } else {
+      statusEl.innerText = "✅ Bình thường";
+      statusEl.classList.add("normal");
+    }
+  });
+</script>
+
+</body>
+</html>
